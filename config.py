@@ -21,7 +21,8 @@ PORT = int(os.getenv("PORT", 8000))
 DB_PATH = os.getenv("DB_PATH", "school.db")
 
 # ─── Модели API ───────────────────────────────────────────────────────────────
-GEMINI_MODEL = "gemini-1.5-flash"
+# gemini-1.5-flash снята с API; переопредели через GEMINI_MODEL при необходимости
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 GEMINI_API_URL = (
     f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 )

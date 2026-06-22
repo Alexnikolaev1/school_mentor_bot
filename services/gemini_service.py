@@ -10,7 +10,7 @@ from typing import Optional
 
 import aiohttp
 
-from config import GEMINI_API_KEY, GEMINI_API_URL
+from config import GEMINI_API_KEY, GEMINI_API_URL, GEMINI_MODEL
 from utils.rate_limiter import gemini_limiter
 from utils.cache import get_cached, set_cached, make_key
 
@@ -89,7 +89,14 @@ async def call_gemini(
 
             if resp.status != 200:
                 text = await resp.text()
-                logger.error(f"Gemini API error {resp.status}: {text[:200]}")
+                logger.error(
+                    f"Gemini API error {resp.status} (model={GEMINI_MODEL}): {text[:400]}"
+                )
+                if resp.status == 404:
+                    logger.error(
+                        "Модель не найдена. Задай GEMINI_MODEL=gemini-2.5-flash "
+                        "или gemini-3.5-flash в переменных окружения."
+                    )
                 return None
 
             data = await resp.json()
