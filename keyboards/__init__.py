@@ -1,0 +1,29 @@
+from keyboards.menus import (
+    main_menu_keyboard,
+    grade_keyboard,
+    subjects_keyboard,
+    exam_subjects_keyboard,
+    homework_subjects_keyboard,
+    settings_keyboard,
+    exam_type_keyboard,
+    study_time_keyboard,
+    level_keyboard,
+    timezone_keyboard,
+    compact_keyboard,
+    remove_keyboard,
+)
+
+__all__ = [
+    "main_menu_keyboard",
+    "grade_keyboard",
+    "subjects_keyboard",
+    "exam_subjects_keyboard",
+    "homework_subjects_keyboard",
+    "settings_keyboard",
+    "exam_type_keyboard",
+    "study_time_keyboard",
+    "level_keyboard",
+    "timezone_keyboard",
+    "compact_keyboard",
+    "remove_keyboard",
+]

@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Данные и секреты
+.env
+school.db
+*.db
+
+# TTS и временные файлы
+*.mp3
+*.ogg
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Логи
+*.log
