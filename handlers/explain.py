@@ -21,10 +21,17 @@ from utils.text import send_long_message
 logger = logging.getLogger(__name__)
 router = Router()
 
+TTS_YES = frozenset({"да", "yes", "ага", "угу", "ok", "ок"})
+TTS_NO = frozenset({"нет", "no", "не", "неа"})
+
 
 class ExplainStates(StatesGroup):
     waiting_topic = State()
     waiting_tts_confirm = State()
+
+
+def _is_tts_yes(text: str) -> bool:
+    return text.strip().lower() in TTS_YES
 
 
 @router.message(F.text == "📚 Объяснить тему")
@@ -48,13 +55,46 @@ async def ask_for_topic(message: Message, state: FSMContext) -> None:
 @router.message(ExplainStates.waiting_topic, F.text)
 async def process_topic_request(message: Message, state: FSMContext) -> None:
     await state.clear()
-    await process_text_question(message, message.text.strip())
+    await process_text_question(message, message.text.strip(), state)
 
 
-@router.message(
-    F.text,
-    ~F.text.startswith("/"),
-)
+@router.message(ExplainStates.waiting_tts_confirm, F.text)
+async def handle_tts_confirm(message: Message, state: FSMContext) -> None:
+    """Ответ после предложения озвучить объяснение."""
+    text = message.text.strip().lower()
+
+    if _is_tts_yes(text):
+        await state.clear()
+        await _play_last_response(message)
+        return
+
+    if text in TTS_NO:
+        await state.clear()
+        await message.answer("Хорошо! Задай новый вопрос, когда будешь готов 👇")
+        return
+
+    # Любой другой текст — новый вопрос
+    await state.clear()
+    await process_text_question(message, message.text.strip(), state)
+
+
+@router.message(F.text.lower().in_(TTS_YES))
+async def handle_tts_fallback(message: Message, state: FSMContext) -> None:
+    """Озвучка по «да», если пользователь не в другом сценарии."""
+    if await state.get_state():
+        return
+
+    user_id = message.from_user.id
+    if db.get_diagnostic_session(user_id) or db.get_exam_session(user_id):
+        return
+
+    if not db.get_last_response(user_id):
+        return
+
+    await _play_last_response(message)
+
+
+@router.message(F.text, ~F.text.startswith("/"))
 async def free_text_question(message: Message, state: FSMContext) -> None:
     """Свободный текст — маршрутизируем в объяснение, если не кнопка меню."""
     if await state.get_state():
@@ -64,14 +104,21 @@ async def free_text_question(message: Message, state: FSMContext) -> None:
     if not text or is_menu_button(text):
         return
 
+    if _is_tts_yes(text) and db.get_last_response(message.from_user.id):
+        return
+
     user_id = message.from_user.id
     if not db.get_student(user_id):
         return
 
-    await process_text_question(message, text)
+    await process_text_question(message, text, state)
 
 
-async def process_text_question(message: Message, text: str) -> None:
+async def process_text_question(
+    message: Message,
+    text: str,
+    state: FSMContext | None = None,
+) -> None:
     """Публичная функция — вызывается из voice.py после транскрибации."""
     user_id = message.from_user.id
     student = db.get_student(user_id)
@@ -84,9 +131,20 @@ async def process_text_question(message: Message, text: str) -> None:
     subjects = parse_student_subjects(student.get("subjects", "[]"))
 
     if is_math_task(text):
-        await _handle_math_task(message, text, grade, level, user_id, subjects)
+        await _handle_math_task(message, text, grade, level, user_id, subjects, state)
     else:
-        await _handle_topic_explanation(message, text, grade, level, user_id, subjects)
+        await _handle_topic_explanation(message, text, grade, level, user_id, subjects, state)
+
+
+async def _offer_tts(message: Message, state: FSMContext | None, response: str) -> None:
+    if len(response) <= 500:
+        return
+    await message.answer(
+        "🔊 Хочешь прослушать объяснение? Напиши <b>да</b>",
+        parse_mode="HTML",
+    )
+    if state:
+        await state.set_state(ExplainStates.waiting_tts_confirm)
 
 
 async def _handle_math_task(
@@ -96,6 +154,7 @@ async def _handle_math_task(
     level: str,
     user_id: int,
     subjects: list[str],
+    state: FSMContext | None,
 ) -> None:
     subject = get_subject_from_text(text)
     processing_msg = await message.answer("⚙️ Решаю задачу через Wolfram Alpha + Gemini...")
@@ -122,11 +181,7 @@ async def _handle_math_task(
     if response:
         await send_long_message(message, prefix + response)
         db.save_last_response(user_id, response)
-        if len(response) > 500:
-            await message.answer(
-                "🔊 Хочешь прослушать объяснение? Напиши <b>да</b>",
-                parse_mode="HTML",
-            )
+        await _offer_tts(message, state, response)
     else:
         await message.answer("Не удалось решить задачу. Попробуй сформулировать иначе.")
 
@@ -138,6 +193,7 @@ async def _handle_topic_explanation(
     level: str,
     user_id: int,
     subjects: list[str],
+    state: FSMContext | None,
 ) -> None:
     subject = get_subject_from_text(text)
     processing_msg = await message.answer("📚 Готовлю объяснение...")
@@ -162,25 +218,13 @@ async def _handle_topic_explanation(
             db.complete_study_topic(topic_id)
             db.set_active_topic(user_id, 0)
 
-        if len(response) > 500:
-            await message.answer(
-                "🔊 Хочешь прослушать объяснение? Напиши <b>да</b>",
-                parse_mode="HTML",
-            )
+        await _offer_tts(message, state, response)
     else:
         await message.answer("Не удалось получить объяснение. Попробуй позже.")
 
 
-@router.message(F.text.lower() == "да")
-async def handle_tts_request(message: Message, state: FSMContext) -> None:
-    """Озвучивает последнее объяснение."""
-    if await state.get_state():
-        return
-
+async def _play_last_response(message: Message) -> None:
     user_id = message.from_user.id
-    if db.get_diagnostic_session(user_id) or db.get_exam_session(user_id):
-        return
-
     last_text = db.get_last_response(user_id)
 
     if not last_text:
@@ -189,13 +233,11 @@ async def handle_tts_request(message: Message, state: FSMContext) -> None:
         )
         return
 
-    await state.clear()
     await _send_voice_response(message, last_text)
 
 
 @router.message(Command("done"))
 async def complete_current_topic(message: Message) -> None:
-    """Отмечает текущую тему учебного плана как выполненную."""
     user_id = message.from_user.id
     topic_id = db.get_active_topic_id(user_id)
     if topic_id:

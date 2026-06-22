@@ -59,4 +59,4 @@ async def handle_voice_message(message: Message, state: FSMContext) -> None:
 
     # Передаём в хэндлер объяснений
     from handlers.explain import process_text_question
-    await process_text_question(message, transcript)
+    await process_text_question(message, transcript, state)
