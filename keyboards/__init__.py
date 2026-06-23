@@ -11,6 +11,9 @@ from keyboards.menus import (
     timezone_keyboard,
     compact_keyboard,
     remove_keyboard,
+    encyclopedia_mode_keyboard,
+    encyclopedia_followup_keyboard,
+    encyclopedia_quiz_keyboard,
 )
 
 __all__ = [
@@ -26,4 +29,7 @@ __all__ = [
     "timezone_keyboard",
     "compact_keyboard",
     "remove_keyboard",
+    "encyclopedia_mode_keyboard",
+    "encyclopedia_followup_keyboard",
+    "encyclopedia_quiz_keyboard",
 ]

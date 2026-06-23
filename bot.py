@@ -20,7 +20,7 @@ from utils.cache import cleanup_cache
 from middleware import ErrorHandlerMiddleware, StudentContextMiddleware
 from services.http_client import close_session
 
-from handlers import start, explain, homework, diagnostic, exam, voice, parent, settings
+from handlers import start, explain, homework, diagnostic, exam, voice, parent, settings, encyclopedia
 
 logging.basicConfig(
     level=logging.INFO,
@@ -58,6 +58,7 @@ def create_dispatcher() -> Dispatcher:
     dp.include_router(exam.router)
     dp.include_router(settings.router)
     dp.include_router(parent.router)
+    dp.include_router(encyclopedia.router)
     dp.include_router(explain.router)
 
     return dp

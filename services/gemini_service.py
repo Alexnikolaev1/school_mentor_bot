@@ -264,3 +264,29 @@ async def get_progress_summary(student_name: str, stats: dict, user_id: int) -> 
     prompt = progress_summary_prompt(student_name, stats)
     result = await call_gemini(prompt, user_id=user_id, use_cache=False)
     return result or "Не удалось сформировать отчёт."
+
+
+async def get_encyclopedia_entry(
+    topic: str,
+    mode: str,
+    grade: int,
+    level: str,
+    user_id: int,
+    previous_text: str | None = None,
+) -> Optional[str]:
+    """Генерирует энциклопедическую справку в выбранном формате."""
+    from templates.prompts import encyclopedia_prompt
+    prompt = encyclopedia_prompt(topic, mode, grade, level, previous_text)
+    return await call_gemini(prompt, user_id=user_id, use_cache=True, cache_ttl=14)
+
+
+async def generate_encyclopedia_quiz(
+    topic: str,
+    article_text: str,
+    grade: int,
+    user_id: int,
+) -> Optional[dict]:
+    """Генерирует мини-викторину по энциклопедической теме."""
+    from templates.prompts import encyclopedia_quiz_prompt
+    prompt = encyclopedia_quiz_prompt(topic, article_text, grade)
+    return await call_gemini_json(prompt, user_id=user_id, use_cache=False)

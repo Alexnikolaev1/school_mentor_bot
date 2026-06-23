@@ -5,8 +5,26 @@ from config import GRADES, SUBJECTS, TIMEZONES
 
 MAIN_MENU_BUTTONS = (
     ("📚 Объяснить тему", "📝 Проверить ДЗ"),
-    ("📊 Диагностика", "🎓 Экзамен"),
-    ("📈 Успеваемость", "⚙️ Настройки"),
+    ("📖 Энциклопедические знания", "📊 Диагностика"),
+    ("🎓 Экзамен", "📈 Успеваемость"),
+    ("⚙️ Настройки",),
+)
+
+# Режимы энциклопедии
+ENCYCLOPEDIA_MODE_BUTTONS = (
+    "📌 Краткий справочник",
+    "📚 Полная статья",
+    "🕐 Хронология",
+    "🔗 Карта связей",
+)
+
+ENCYCLOPEDIA_FOLLOWUP_BUTTONS = (
+    "📚 Углубить",
+    "🔗 Связанные темы",
+    "🎯 Проверить знания",
+    "🔊 Озвучить",
+    "📖 Новая тема",
+    "◀️ Меню",
 )
 
 
@@ -127,6 +145,31 @@ def compact_keyboard() -> ReplyKeyboardMarkup:
         keyboard=[
             [KeyboardButton(text="⏹ Стоп"), KeyboardButton(text="🏠 Меню")],
         ],
+        resize_keyboard=True,
+    )
+
+
+def encyclopedia_mode_keyboard() -> ReplyKeyboardMarkup:
+    rows = [
+        [KeyboardButton(text=ENCYCLOPEDIA_MODE_BUTTONS[0]), KeyboardButton(text=ENCYCLOPEDIA_MODE_BUTTONS[1])],
+        [KeyboardButton(text=ENCYCLOPEDIA_MODE_BUTTONS[2]), KeyboardButton(text=ENCYCLOPEDIA_MODE_BUTTONS[3])],
+        [KeyboardButton(text="◀️ Меню")],
+    ]
+    return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
+
+
+def encyclopedia_followup_keyboard() -> ReplyKeyboardMarkup:
+    rows = [
+        [KeyboardButton(text=ENCYCLOPEDIA_FOLLOWUP_BUTTONS[0]), KeyboardButton(text=ENCYCLOPEDIA_FOLLOWUP_BUTTONS[1])],
+        [KeyboardButton(text=ENCYCLOPEDIA_FOLLOWUP_BUTTONS[2]), KeyboardButton(text=ENCYCLOPEDIA_FOLLOWUP_BUTTONS[3])],
+        [KeyboardButton(text=ENCYCLOPEDIA_FOLLOWUP_BUTTONS[4]), KeyboardButton(text=ENCYCLOPEDIA_FOLLOWUP_BUTTONS[5])],
+    ]
+    return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
+
+
+def encyclopedia_quiz_keyboard() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text="⏹ Стоп"), KeyboardButton(text="◀️ Меню")]],
         resize_keyboard=True,
     )
 
